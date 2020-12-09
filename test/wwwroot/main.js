@@ -29,11 +29,36 @@ async function LoadDetails(id) {
         const answer = await response.json();
         createTitle(answer.part)
         createDetailsRow(answer.details)
+        createSubTable(answer.products);
     }
 }
 
 
+function createSubTable(products) {
 
+    
+    const thisDiv = document.getElementById("details-root")
+    thisDiv.innerHTML = "";
+
+    details.forEach(product => {
+
+        const container = document.getElementById("details-root")
+
+        const tr = document.createElement("tr")
+        tr.setAttribute("item-id", product.id);
+
+        const name = document.createElement("td");
+        name.append(product.name);
+        tr.append(name);
+
+        const count = document.createElement("td");
+        count.append(' количество: ' + detail.count);
+        tr.append(count);
+
+        container.append(tr)
+        thisDiv.append(container)
+    })
+}
 
 function createCatalog(catalog) {
 
@@ -120,49 +145,4 @@ function createDetailsRow(details) {
 function createTitle(part) {
     const title = document.querySelector("h1")
     title.innerText = part.name
-}
-
-// Создание иерархии каталога
-function createCatalog1(catalog) {
-
-    const root = document.getElementById('catalog-root')
-    let parent
-    let thisDiv = root;
-
-    catalog.forEach()
-
-    for (let i = 0; i < Object.keys(catalog).length; i++) {
-
-        console.log(i + " " + (+catalog[i].id - 1))
-        catalog[i].name += " " + i + " id: " + catalog[i - 1].id + "H: " + catalog[i].hierarchy
-
-        // Если элемент начальный тогда parent = root
-        if (catalog[i].hierarchy == 0) {
-            parent = root
-        }
-        else if (catalog[i].hierarchy > catalog[i - 1].hierarchy) {
-            parent = thisDiv
-        }
-        else if (catalog[i].hierarchy < catalog[i - 1].hierarchy) {
-
-            parent = parent.parentElement;
-        } else if (catalog[i].hierarchy > catalog[i + 1].hierarchy) {
-            catalog[i].name += "  " + thisDiv.innerText
-        }
-
-
-        thisDiv = CreateElement(catalog[i])
-        thisDiv.setAttribute("Part-id", catalog[i].id - 1);
-        parent.append(thisDiv)
-
-        if (catalog[i].hierarchy == 2) {
-            thisDiv.setAttribute("Part-id", catalog[i].id - 1);
-            thisDiv.className += " part";
-
-            thisDiv.querySelector("a").addEventListener('click', e => {
-                e.preventDefault();
-                LoadDetails(catalog[i].id)
-            })
-        }
-    }
 }

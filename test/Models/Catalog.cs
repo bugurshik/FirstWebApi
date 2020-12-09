@@ -1,4 +1,5 @@
 ﻿
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace test.Models
@@ -17,7 +18,6 @@ namespace test.Models
         public string Name { get; set; }
         public byte[] Image { get; set; }
         public int CatalogId { get; set; }
-
         public List<Detail> Details { get; set; } = new List<Detail>(); //Один ко многим -> Detail
     }
 
@@ -25,14 +25,12 @@ namespace test.Models
     {
         public int Id { get; set; } // Первичный ключ
         public string Model { get; set; }
-     
         public int? Count { get; set; }
         public string Name { get; set; }
 
         public int PartId { get; set; }
-        public Part Part { get; set; } //Один ко многим <- Parts
-
-        public List<Product> Products { get; set; } = new List<Product>(); // Многие ко многим Product
+        public  Part Part { get; set; } //Один ко многим <- Parts
+       // public  List<Product> Products { get; set; } = new List<Product>(); // Многие ко многим Product
     }
 
     public class Product
@@ -40,10 +38,9 @@ namespace test.Models
         public int Id { get; set; } // Первичный ключ
         public string DetailId { get; set; }
         public string Name { get; set; }
-        public int Price { get; set; }
+        public int? Price { get; set; }
         public byte[] Image { get; set; }
-
-        public List<Detail> Details { get; set; } = new List<Detail>(); // Многие ко многим Detail
+        public  List<Detail> Details { get; set; } = new List<Detail>(); // Многие ко многим Detail
     }
 }
 

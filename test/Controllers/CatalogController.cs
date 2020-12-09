@@ -29,16 +29,34 @@ namespace test.Controllers
                     db.SaveChanges();
                 }
                 
-                ParsingAll("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/");
+                //ParsingAll("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/");
             }
 
+            db.Database.EnsureDeleted();
+            db.Database.EnsureCreated();
+            var Catal = new CatalogItem { ParentId = 0, Hierarchy = 1 };
+            db.Catalog.Add(Catal);
 
+            var part1 = new Part { CatalogId = 1 };
+            var part2 = new Part { CatalogId = 2 };
+            db.Parts.AddRange(part1, part2);
 
-            var ss = db.Details.Include(x => x.Part).Where(u => u.PartId == 1).ToList();
-            foreach (Detail user in ss)
-                System.Diagnostics.Debug.WriteLine($"{user.Name} - {user.Part?.Name}");
+            var Det1 = new Detail { Name = "Table", Count = 2, PartId = 1 };
+            var Det2 = new Detail { Name = "Floor", Count = 11, PartId = 2 };
+            db.Details.AddRange(Det1, Det2);
 
-            //System.Diagnostics.Debug.WriteLine(ct.Href + "===================");
+           // var Prod1 = new Product { Name = "best", Price = 11 };
+           // var Prod2 = new Product { Name = "worst", Price = 200 };
+          //  var Prod3 = new Product { Name = "oors", Price = 50 };
+          //  db.Products.AddRange(Prod1, Prod2, Prod3);
+
+            //многие к многим
+           // Prod1.Details.Add(Det1);
+           // Prod1.Details.Add(Det2);
+           // Prod2.Details.Add(Det2);
+           // Prod3.Details.Add(Det1);
+
+            db.SaveChanges();
         }
 
         //GET api/catalog
@@ -49,22 +67,29 @@ namespace test.Controllers
         }
 
         //GET api/catalog/PartId
-        [HttpGet("{PartId}")]
-        public Answer Get(int PartId)
+        [HttpGet("{CatalogId}")]
+        public Answer Get(int CatalogId)
         {
-            var part = db.Parts.FirstOrDefault(x => x.CatalogId == PartId);
-            
+            var part = db.Parts.FirstOrDefault(x => x.CatalogId == CatalogId);
+
             //System.Diagnostics.Debug.WriteLine((db.Parts.Find(1) == null) + "======================");
-            // var detail1 = db.Details.Include(x => x.Parts);
-            var details = db.Details.Include(x => x.Part).Where(u => u.PartId == 1).ToList();
-            foreach (Detail user in details)
-                System.Diagnostics.Debug.WriteLine($"{user.Name} - {user.Part?.Name}");
-            //var det = 
+            var detail1 = db.Details.Where(x => x.Id == 0);
+           // db.Details.Where(x => x.Part.Id == 2);
+            var products = db.Products.Where(x => x.Id == 2);
+
+           // var details = db.Details.Include(x => x.Part).Where(u => u.PartId == 3).ToList();
+            foreach (Product user in products)
+               System.Diagnostics.Debug.WriteLine($"{user.Name} - {user.Price}");
+
+           // var details = db.Details.Include(x => x.Part).Where(u => u.PartId == 3).ToList();
+            //foreach (Detail user in details)
+                //System.Diagnostics.Debug.WriteLine($"{user.Name} - {user.Part?.Name}");
+
             // var product = db.Products.Include(db.Details.Where(x => x.PartId == PartId));
             // if (detail == null)
             // return NotFound();
             // var tt = new ObjectResult(product);
-            return new Answer { Part = part};
+            return new Answer { Part = part, Products = products, Details = detail1};
                //var new ObjectResult(detail);
         }
 
@@ -159,7 +184,7 @@ namespace test.Controllers
                 if (detailNode.HasClass("goods"))
                 {
                     // Парсинг товаров этой детали
-                    parsingGoods(detailNode, NewDetail.Model);
+                    parsingGoods(detailNode, NewDetail.Model, NewDetail);
                     continue;
                 }
                 // поиск по части документа
@@ -178,7 +203,7 @@ namespace test.Controllers
                 db.SaveChanges();
             }
         }
-        void parsingGoods(HtmlNode GoodsContainer, string detailNumber)
+        void parsingGoods(HtmlNode GoodsContainer, string detailNumber, Detail detail)
         {
             string name;
             int price;
@@ -197,6 +222,9 @@ namespace test.Controllers
 
                 // Запись в DB
                 NewProduct = new Product { Price = price, Name = name, DetailId = detailNumber };
+                // добавить в таблицу
+                NewProduct.Details.Add(detail);
+                // добавить связь многие-многие
                 db.Products.Add(NewProduct);
                 db.SaveChanges();
             }
