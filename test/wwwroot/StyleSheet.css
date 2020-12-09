@@ -1,0 +1,54 @@
+﻿[data-id] {
+    cursor: pointer;
+    padding: 15px;
+}
+body {
+    display: block;
+}
+
+
+
+.wrapper {
+    padding: 20px;
+    display:flex;
+    justify-content:space-between;
+}
+
+h1{
+    text-align:left;
+    padding-right:30px;
+}
+
+
+/* catalog */
+.element {
+    padding: 5px !important;
+}
+
+.element .element {
+        padding-left: 15px !important;
+}
+#text {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.part:hover {
+    color: red;
+}
+a {
+    cursor: pointer;
+}
+
+/* details */
+#details-root {
+    border: 5px solid;
+}
+
+td {
+    padding: 10px;
+}
+table {
+    border-collapse: collapse;
+    width: 60vw;
+}
