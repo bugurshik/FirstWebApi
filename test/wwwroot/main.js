@@ -33,58 +33,15 @@ async function LoadDetails(id) {
     if (response.ok === true) {
         // получаем данные
         const answer = await response.json();
-        createTitle(answer.part)
-        createDetailsRow(answer.part.details)
-        createSubTable(answer.products.value);
+        createTitle(answer)
+        createDetailsRow(answer.details)
     }
 }
-
-
-function createSubTable(products) {
-
-    products.forEach(product => {
-
-        //console.log(product)
-
-        const Root = document.getElementById(product.model)
-
-        let goodsDiv = Root.parentElement.querySelector('.goods')
-
-        console.log(Root.innerHTML)
-       
-        // Нет контейнера с товароми?
-        if (goodsDiv == null) {
-
-            // создать контейнер товаров
-
-            const rootIndex = Root.rowIndex
-            const tableRow = Root.parentElement.insertRow(rootIndex + 1)
-
-            const subrow = document.createElement('td')
-            subrow.setAttribute('colspan', 3)
-            tableRow.append(subrow)
-
-            goodsDiv = document.createElement('div')
-            goodsDiv.setAttribute('class', 'goods')
-            subrow.append(goodsDiv)
-
-        }
-        
-
-        const productItem = document.createElement('div')
-        productItem.setAttribute('class', 'product')
-        goodsDiv.append(productItem)
-
-        const cellName = document.createElement('div');
-        cellName.append(product.name);
-        productItem.append(cellName);
-
-        const price = document.createElement("div");
-        price.append(' Цена: ' + product.price);
-        productItem.append(price);
-    })
-
+function createTitle(part) {
+    const title = document.querySelector("h1")
+    title.innerText = part.name
 }
+
 
 function createCatalog(catalog) {
 
@@ -148,26 +105,61 @@ function createDetailsRow(details) {
 
     details.forEach(detail => {
 
-        const tr = document.createElement("tr")
-        tr.setAttribute("id", detail.model);
-        Table.append(tr)
+        const row = document.createElement("tr")
+        row.setAttribute("id", detail.model);
+        Table.append(row)
 
         const modelTd = document.createElement("td");
         modelTd.append(detail.model);
-        tr.append(modelTd);
+        row.append(modelTd);
 
         const name = document.createElement("td");
         name.append(detail.name);
-        tr.append(name);
+        row.append(name);
 
         const count = document.createElement("td");
         count.append(' количество: ' + detail.count);
-        tr.append(count);
+        row.append(count);
 
+        if (detail.products.length)
+            createSubTable(detail.products, row);
     })
 }
 
-function createTitle(part) {
-    const title = document.querySelector("h1")
-    title.innerText = part.name
+function createSubTable(products, parentRow) {
+    console.log(products)
+    products.forEach(product => {
+
+        let goodsDiv = parentRow.parentElement.querySelector('.goods')
+
+        console.log(parentRow.innerHTML)
+
+        // Нет контейнера с товароми?
+        if (goodsDiv == null) {
+
+            // создать контейнер товаров
+            const rootIndex = parentRow.rowIndex
+            const tableRow = parentRow.parentElement.insertRow(rootIndex + 1)
+
+            const subrow = document.createElement('td')
+            subrow.setAttribute('colspan', 3)
+            tableRow.append(subrow)
+
+            goodsDiv = document.createElement('div')
+            goodsDiv.setAttribute('class', 'goods')
+            subrow.append(goodsDiv)
+        }
+        const productItem = document.createElement('div')
+        productItem.setAttribute('class', 'product')
+        goodsDiv.append(productItem)
+
+        const cellName = document.createElement('div');
+        cellName.append(product.name);
+        productItem.append(cellName);
+
+        const price = document.createElement("div");
+        price.append(' Цена: ' + product.price);
+        productItem.append(price);
+    })
 }
+

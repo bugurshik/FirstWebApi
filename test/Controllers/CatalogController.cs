@@ -42,31 +42,22 @@ namespace test.Controllers
 
         //GET api/catalog/PartId
         [HttpGet("{CatalogId}")]
-        public Answer Get(int CatalogId)
+        public  ActionResult Get(int CatalogId)
         {
-            var part = db.Parts.FirstOrDefault(x => x.CatalogId == CatalogId);
+            var part = db.Parts.Include(x => x.Details).ThenInclude(d => d.Products).FirstOrDefault(y => y.CatalogId == CatalogId);
             if (part == null)
             {
                 var href = db.Catalog.Find(CatalogId).Href;
+                if (href == null)
+                    return NotFound();
                 parsingParts(href, CatalogId);
                 db.SaveChanges();
             }
 
-            var details = db.Details.Where(d => d.Part == part);
-
-            ObjectResult products = new ObjectResult( from p in db.Products
-                      join d in db.Details.Where(d => d.Part == part) on p.DetailModel equals d.Model
-                      select new
-                      {
-                          Model = p.DetailModel,
-                          Name = p.Name,
-                          Price = p.Price,
-                      });
+            return new ObjectResult(part);
 
             //Byte[] b = part.Image;       
             //return File(b, "image/jpeg");
-
-            return new Answer{ Part = part, Details = details.ToList(), Products = products };
         }
 
         IEnumerable<CatalogItem> parsingCatalog(string href)
@@ -110,22 +101,6 @@ namespace test.Controllers
             return Elem;
         }
 
-        void ParsingAll(string href)
-        {
-            int counter = 0;
-            var catalog = db.Catalog.Select(c => new { c.Href, c.Id }).Where(x => x.Href!=null).ToList();
-            foreach (var element in catalog)
-            {
-                counter++;
-                parsingParts(element.Href, element.Id);
-                if (counter > 10)
-                {
-                    break;
-                }
-            }
-            db.SaveChanges();
-        }
-
         void parsingParts(string href, int catalogId) // Возвращает элементы части
         {
             // Получить документ
@@ -144,7 +119,7 @@ namespace test.Controllers
             string name = HtmlDoc.QuerySelector("h1").GetDirectInnerText().Trim();
 
             // debug
-            System.Diagnostics.Debug.WriteLine(name);
+            System.Diagnostics.Debug.WriteLine("======================================");
 
             //TODO: добавить алгоритм записи картинки
             // Запись в DB
@@ -166,7 +141,6 @@ namespace test.Controllers
                 // У детали есть товары?
                 if (detailNode.HasClass("goods"))
                 {
-                    db.SaveChanges();
                     // Парсинг товаров этой детали
                     parsingGoods(detailNode, NewDetail);
                     continue;
@@ -179,12 +153,14 @@ namespace test.Controllers
                 string count = detailNode.QuerySelector(".count span") == null ? "0" : detailNode.QuerySelector(".count span").InnerText.Trim();
 
                 // debug
+                System.Diagnostics.Debug.WriteLine("Parsing detail... model: " + NewDetail.Model);
                 //System.Diagnostics.Debug.WriteLine("{0} | {1} | {2} | частей : {3}", position.PadRight(4).PadLeft(30), model.PadRight(20), name.PadRight(70), count);
 
                 // Запись в DB
                 NewDetail = new Detail { Model = model, Count = Convert.ToInt32(count), Part = part, Name = name };
                 db.Details.Add(NewDetail);
-                }
+                db.SaveChanges();
+            }
         }
 
         void parsingGoods(HtmlNode GoodsContainer, Detail detail)
@@ -206,14 +182,12 @@ namespace test.Controllers
                 // добавить в таблицу
 
                 //debug
-                System.Diagnostics.Debug.WriteLine(detail.Id + "=================");
+                System.Diagnostics.Debug.WriteLine("Parsing product... id: " + detail.Id );
                 NewProduct.Details.Add(detail); 
                 // добавить связь "многие-многие"
                 db.Products.Add(NewProduct);
                 db.SaveChanges();
             }
         }
-
-
     }
 }
