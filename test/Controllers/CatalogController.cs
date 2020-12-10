@@ -42,7 +42,7 @@ namespace test.Controllers
 
         //GET api/catalog/PartId
         [HttpGet("{CatalogId}")]
-        public ActionResult Get(int CatalogId)
+        public Answer Get(int CatalogId)
         {
             var part = db.Parts.FirstOrDefault(x => x.CatalogId == CatalogId);
             if (part == null)
@@ -52,23 +52,21 @@ namespace test.Controllers
                 db.SaveChanges();
             }
 
-            
-            var test = db.Database.ExecuteSqlRaw("select * from Products join (select Model from Details as d right join(select Id from Parts Where Parts.CatalogId = 7) as p on p.Id = d.PartId) AS m on m.Model = Products.DetailModel");
-            var huh = from p in db.Products
+            var details = db.Details.Where(d => d.Part == part);
+
+            ObjectResult products = new ObjectResult( from p in db.Products
                       join d in db.Details.Where(d => d.Part == part) on p.DetailModel equals d.Model
                       select new
                       {
-                          model = p.DetailModel
-                      };
+                          Model = p.DetailModel,
+                          Name = p.Name,
+                          Price = p.Price,
+                      });
 
             //Byte[] b = part.Image;       
             //return File(b, "image/jpeg");
 
-            var detail = db.Details.Where(d => d.Part == part).ToList();
-
-            var products = db.Products.Include(x => x.Details.Where(d => d.Part == part)).ToList();
-
-            return new ObjectResult(huh);
+            return new Answer{ Part = part, Details = details.ToList(), Products = products };
         }
 
         IEnumerable<CatalogItem> parsingCatalog(string href)

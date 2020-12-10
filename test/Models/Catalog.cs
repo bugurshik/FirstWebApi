@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace test.Models
 {
@@ -43,7 +44,7 @@ namespace test.Models
     {
         public Part Part { get; set; }
         public IEnumerable<Detail> Details { get; set; }
-        public IEnumerable<Product> Products { get; set; }
+        public ObjectResult Products { get; set; }
     }
 }
 

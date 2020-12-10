@@ -16,8 +16,14 @@ async function LoadCatalog() {
    }
 }
 
+let curentCatalog
 // Получить данные о деталях
 async function LoadDetails(id) {
+
+    if (curentCatalog == id)
+        return
+    curentCatalog = id
+
     // отправляет запрос и получаем ответ
     const response = await fetch("/api/catalog/ " + id, {
         method: "GET",
@@ -27,36 +33,57 @@ async function LoadDetails(id) {
     if (response.ok === true) {
         // получаем данные
         const answer = await response.json();
-        console.log(answer)
         createTitle(answer.part)
-        createDetailsRow(answer.details)
-        createSubTable(answer.products);
+        createDetailsRow(answer.part.details)
+        createSubTable(answer.products.value);
     }
 }
 
 
 function createSubTable(products) {
 
-    
-  //  const thisDiv = document.getElementById("details-root")
-    const Table = document.createElement('table')
-  
     products.forEach(product => {
 
-        console.log(product)
-        const tr = document.createElement("tr")
-        tr.setAttribute("item-id", product.name);
+        //console.log(product)
 
-        const name = document.createElement("td");
-        name.append(product.name);
-        tr.append(name);
+        const Root = document.getElementById(product.model)
 
-        const count = document.createElement("td");
-        count.append(' количество: ' + product.price);
-        tr.append(count);
+        let goodsDiv = Root.parentElement.querySelector('.goods')
 
-        Table.append(tr)
+        console.log(Root.innerHTML)
+       
+        // Нет контейнера с товароми?
+        if (goodsDiv == null) {
+
+            // создать контейнер товаров
+
+            const rootIndex = Root.rowIndex
+            const tableRow = Root.parentElement.insertRow(rootIndex + 1)
+
+            const subrow = document.createElement('td')
+            subrow.setAttribute('colspan', 3)
+            tableRow.append(subrow)
+
+            goodsDiv = document.createElement('div')
+            goodsDiv.setAttribute('class', 'goods')
+            subrow.append(goodsDiv)
+
+        }
+        
+
+        const productItem = document.createElement('div')
+        productItem.setAttribute('class', 'product')
+        goodsDiv.append(productItem)
+
+        const cellName = document.createElement('div');
+        cellName.append(product.name);
+        productItem.append(cellName);
+
+        const price = document.createElement("div");
+        price.append(' Цена: ' + product.price);
+        productItem.append(price);
     })
+
 }
 
 function createCatalog(catalog) {
@@ -69,7 +96,6 @@ function createCatalog(catalog) {
 
     catalog.forEach(
         function (item) {
-            item.name += " " + " id: " + item.id 
 
             // Если элемент начальный тогда parent = root
             if (item.hierarchy == 0) {
@@ -123,7 +149,7 @@ function createDetailsRow(details) {
     details.forEach(detail => {
 
         const tr = document.createElement("tr")
-        tr.setAttribute("Model", detail.model);
+        tr.setAttribute("id", detail.model);
         Table.append(tr)
 
         const modelTd = document.createElement("td");
@@ -138,7 +164,6 @@ function createDetailsRow(details) {
         count.append(' количество: ' + detail.count);
         tr.append(count);
 
-        
     })
 }
 
