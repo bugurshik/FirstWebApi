@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +7,9 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using HtmlAgilityPack;
 using Fizzler.Systems.HtmlAgilityPack;
+using System.Drawing;
+using System.IO;
+using System.Net;
 
 namespace test.Controllers
 {
@@ -19,44 +21,16 @@ namespace test.Controllers
         public CatalogController(CatalogContext context)
         {
             db = context;
+
             if (!db.Catalog.Any())
             {
-                var x = parsingCatalog("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/");
-               
-                foreach (var y in x)
+                var catalog = parsingCatalog("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/");               
+                foreach (var Item in catalog)
                 {
-                    db.Catalog.Add(new CatalogItem { ParentId = y.ParentId, Hierarchy = y.Hierarchy, Name = y.Name, Href = y.Href });
+                    db.Catalog.Add(Item);
                     db.SaveChanges();
                 }
-                
-                //ParsingAll("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/");
             }
-
-            db.Database.EnsureDeleted();
-            db.Database.EnsureCreated();
-            var Catal = new CatalogItem { ParentId = 0, Hierarchy = 1 };
-            db.Catalog.Add(Catal);
-
-            var part1 = new Part { CatalogId = 1 };
-            var part2 = new Part { CatalogId = 2 };
-            db.Parts.AddRange(part1, part2);
-
-            var Det1 = new Detail { Name = "Table", Count = 2, PartId = 1 };
-            var Det2 = new Detail { Name = "Floor", Count = 11, PartId = 2 };
-            db.Details.AddRange(Det1, Det2);
-
-           // var Prod1 = new Product { Name = "best", Price = 11 };
-           // var Prod2 = new Product { Name = "worst", Price = 200 };
-          //  var Prod3 = new Product { Name = "oors", Price = 50 };
-          //  db.Products.AddRange(Prod1, Prod2, Prod3);
-
-            //многие к многим
-           // Prod1.Details.Add(Det1);
-           // Prod1.Details.Add(Det2);
-           // Prod2.Details.Add(Det2);
-           // Prod3.Details.Add(Det1);
-
-            db.SaveChanges();
         }
 
         //GET api/catalog
@@ -68,29 +42,33 @@ namespace test.Controllers
 
         //GET api/catalog/PartId
         [HttpGet("{CatalogId}")]
-        public Answer Get(int CatalogId)
+        public ActionResult Get(int CatalogId)
         {
             var part = db.Parts.FirstOrDefault(x => x.CatalogId == CatalogId);
+            if (part == null)
+            {
+                var href = db.Catalog.Find(CatalogId).Href;
+                parsingParts(href, CatalogId);
+                db.SaveChanges();
+            }
 
-            //System.Diagnostics.Debug.WriteLine((db.Parts.Find(1) == null) + "======================");
-            var detail1 = db.Details.Where(x => x.Id == 0);
-           // db.Details.Where(x => x.Part.Id == 2);
-            var products = db.Products.Where(x => x.Id == 2);
+            
+            var test = db.Database.ExecuteSqlRaw("select * from Products join (select Model from Details as d right join(select Id from Parts Where Parts.CatalogId = 7) as p on p.Id = d.PartId) AS m on m.Model = Products.DetailModel");
+            var huh = from p in db.Products
+                      join d in db.Details.Where(d => d.Part == part) on p.DetailModel equals d.Model
+                      select new
+                      {
+                          model = p.DetailModel
+                      };
 
-           // var details = db.Details.Include(x => x.Part).Where(u => u.PartId == 3).ToList();
-            foreach (Product user in products)
-               System.Diagnostics.Debug.WriteLine($"{user.Name} - {user.Price}");
+            //Byte[] b = part.Image;       
+            //return File(b, "image/jpeg");
 
-           // var details = db.Details.Include(x => x.Part).Where(u => u.PartId == 3).ToList();
-            //foreach (Detail user in details)
-                //System.Diagnostics.Debug.WriteLine($"{user.Name} - {user.Part?.Name}");
+            var detail = db.Details.Where(d => d.Part == part).ToList();
 
-            // var product = db.Products.Include(db.Details.Where(x => x.PartId == PartId));
-            // if (detail == null)
-            // return NotFound();
-            // var tt = new ObjectResult(product);
-            return new Answer { Part = part, Products = products, Details = detail1};
-               //var new ObjectResult(detail);
+            var products = db.Products.Include(x => x.Details.Where(d => d.Part == part)).ToList();
+
+            return new ObjectResult(huh);
         }
 
         IEnumerable<CatalogItem> parsingCatalog(string href)
@@ -134,7 +112,6 @@ namespace test.Controllers
             return Elem;
         }
 
-
         void ParsingAll(string href)
         {
             int counter = 0;
@@ -148,16 +125,24 @@ namespace test.Controllers
                     break;
                 }
             }
+            db.SaveChanges();
         }
+
         void parsingParts(string href, int catalogId) // Возвращает элементы части
         {
             // Получить документ
             HtmlWeb Web = new HtmlWeb();
             var HtmlDoc = Web.Load(href).DocumentNode;
 
-
             // Поиск по документу
-            var Images = HtmlDoc.Descendants("img");
+            var imageUrl = HtmlDoc.QuerySelector("#picture_img").GetAttributeValue("src","");
+
+            byte[] data;
+            using (WebClient webClient = new WebClient())
+            {
+                data = webClient.DownloadData("https://yandex.ru/images/search?pos=1&from=tabbar&img_url=https%3A%2F%2Fsun9-19.userapi.com%2Fc851120%2Fv851120612%2Fd4da%2FylKmY4VPl2A.jpg&text=картинки+здесь+rfhnbyrf+yt+yfqltyf&rpt=simage");
+            }
+
             string name = HtmlDoc.QuerySelector("h1").GetDirectInnerText().Trim();
 
             // debug
@@ -165,14 +150,14 @@ namespace test.Controllers
 
             //TODO: добавить алгоритм записи картинки
             // Запись в DB
-            Part NewPart = new Part { Name = name, CatalogId = catalogId};
+            Part NewPart = new Part { Name = name, CatalogId = catalogId, Image = data };
             db.Parts.Add(NewPart);
-            db.SaveChanges();
 
             // Парсинг деталей 
             parsingDetails(HtmlDoc, NewPart);
             
         }
+
         void parsingDetails(HtmlNode HtmlDoc, Part part)
         {
             Detail NewDetail = new Detail { };
@@ -183,8 +168,9 @@ namespace test.Controllers
                 // У детали есть товары?
                 if (detailNode.HasClass("goods"))
                 {
+                    db.SaveChanges();
                     // Парсинг товаров этой детали
-                    parsingGoods(detailNode, NewDetail.Model, NewDetail);
+                    parsingGoods(detailNode, NewDetail);
                     continue;
                 }
                 // поиск по части документа
@@ -198,12 +184,12 @@ namespace test.Controllers
                 //System.Diagnostics.Debug.WriteLine("{0} | {1} | {2} | частей : {3}", position.PadRight(4).PadLeft(30), model.PadRight(20), name.PadRight(70), count);
 
                 // Запись в DB
-                NewDetail = new Detail { Model = model, Count = Convert.ToInt32(count), PartId = part.Id, Name = name };
+                NewDetail = new Detail { Model = model, Count = Convert.ToInt32(count), Part = part, Name = name };
                 db.Details.Add(NewDetail);
-                db.SaveChanges();
-            }
+                }
         }
-        void parsingGoods(HtmlNode GoodsContainer, string detailNumber, Detail detail)
+
+        void parsingGoods(HtmlNode GoodsContainer, Detail detail)
         {
             string name;
             int price;
@@ -217,17 +203,19 @@ namespace test.Controllers
                 //TODO: добавить алгоритм записи картинки
                 // image = 
 
-                //debug
-                System.Diagnostics.Debug.WriteLine(price + "  " + name);
-
                 // Запись в DB
-                NewProduct = new Product { Price = price, Name = name, DetailId = detailNumber };
+                NewProduct = new Product { Price = price, Name = name, DetailModel = detail.Model};
                 // добавить в таблицу
-                NewProduct.Details.Add(detail);
-                // добавить связь многие-многие
+
+                //debug
+                System.Diagnostics.Debug.WriteLine(detail.Id + "=================");
+                NewProduct.Details.Add(detail); 
+                // добавить связь "многие-многие"
                 db.Products.Add(NewProduct);
                 db.SaveChanges();
             }
         }
+
+
     }
 }

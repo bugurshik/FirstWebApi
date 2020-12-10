@@ -12,6 +12,10 @@ namespace test
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddControllersWithViews()
+            .AddNewtonsoftJson(options =>
+            options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+);
             string catalogDb = "Server=(localdb)\\mssqllocaldb;Database=catalog;Trusted_Connection=True;";
             services.AddDbContext<CatalogContext>(options => options.UseSqlServer(catalogDb));
 
@@ -32,7 +36,6 @@ namespace test
 
             app.UseEndpoints(endpoints =>
             {
-
                 endpoints.MapControllers(); // подключаем маршрутизацию на контроллеры
                 endpoints.MapGet("/", async context =>
                 {

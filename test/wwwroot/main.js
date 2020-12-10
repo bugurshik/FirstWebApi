@@ -27,6 +27,7 @@ async function LoadDetails(id) {
     if (response.ok === true) {
         // получаем данные
         const answer = await response.json();
+        console.log(answer)
         createTitle(answer.part)
         createDetailsRow(answer.details)
         createSubTable(answer.products);
@@ -37,26 +38,24 @@ async function LoadDetails(id) {
 function createSubTable(products) {
 
     
-    const thisDiv = document.getElementById("details-root")
-    thisDiv.innerHTML = "";
+  //  const thisDiv = document.getElementById("details-root")
+    const Table = document.createElement('table')
+  
+    products.forEach(product => {
 
-    details.forEach(product => {
-
-        const container = document.getElementById("details-root")
-
+        console.log(product)
         const tr = document.createElement("tr")
-        tr.setAttribute("item-id", product.id);
+        tr.setAttribute("item-id", product.name);
 
         const name = document.createElement("td");
         name.append(product.name);
         tr.append(name);
 
         const count = document.createElement("td");
-        count.append(' количество: ' + detail.count);
+        count.append(' количество: ' + product.price);
         tr.append(count);
 
-        container.append(tr)
-        thisDiv.append(container)
+        Table.append(tr)
     })
 }
 
@@ -70,8 +69,6 @@ function createCatalog(catalog) {
 
     catalog.forEach(
         function (item) {
-
-            console.log(item.id + "  " + item.name)
             item.name += " " + " id: " + item.id 
 
             // Если элемент начальный тогда parent = root
@@ -119,12 +116,15 @@ LoadCatalog();
 
 function createDetailsRow(details) {
 
-    const thisDiv = document.getElementById("details-root")
-    thisDiv.innerHTML = "";
+    
+    const Table = document.getElementById("details-root")
+    Table.innerHTML = "";
 
     details.forEach(detail => {
+
         const tr = document.createElement("tr")
-        tr.setAttribute("data-rowid", details.id);
+        tr.setAttribute("Model", detail.model);
+        Table.append(tr)
 
         const modelTd = document.createElement("td");
         modelTd.append(detail.model);
@@ -138,7 +138,7 @@ function createDetailsRow(details) {
         count.append(' количество: ' + detail.count);
         tr.append(count);
 
-        thisDiv.append(tr)
+        
     })
 }
 
