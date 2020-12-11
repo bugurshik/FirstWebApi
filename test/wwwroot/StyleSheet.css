@@ -1,12 +1,6 @@
-﻿[data-id] {
-    cursor: pointer;
-    padding: 15px;
-}
-body {
+﻿body {
     display: block;
 }
-
-
 
 .wrapper {
     padding: 20px;
@@ -20,28 +14,66 @@ h1{
 }
 
 
-/* catalog */
-.element {
-    padding: 5px !important;
+
+
+/* GENERAL */
+.show {
+    animation: show-hide 0.3s ease;
+    animation-fill-mode: none;
+    animation-fill-mode: forwards;
 }
 
-.element .element .element {
+.hide {
+    animation: show-hide 0.3s ease;
+    animation-direction: reverse;
+    animation-fill-mode: forwards;
+}
+
+@keyframes show-hide {
+
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+
+
+
+/* MENU */
+#catalog-root{
+    padding-top: 60px;
+}
+.element {
+    padding: 5px !important;
+    color: black;
+    font-weight: bold;
+}
+    .element .element .element {
         padding-left: 15px !important;
-        font-weight: bold;
-}
-#text {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-}
-.part:hover {
-    color: red;
-}
-a {
+        color: #8a8a8a;
+        font-weight: normal;
+    }
+
+.element a {
     cursor: pointer;
 }
 
-/* details */
+.part:hover {
+    color: red !important;
+    font-weight: bold !important;
+}
+.selected {
+    color: red !important;
+    font-weight: bold !important;
+}
+
+
+
+/* CONTENT */
 #details-root {
     border: 5px solid;
 }
@@ -61,8 +93,10 @@ table tr td:nth-child(1) {
     min-width: 180px;
 }
 table tr td:nth-child(3) {
-    float:right;
+    float: right;
     padding-right: 20px;
+    white-space: nowrap;
+    text-align: left;
 }
 
 .goods {
@@ -78,3 +112,5 @@ table tr td:nth-child(3) {
     flex-direction: row;
     justify-content: space-between;
 }
+
+

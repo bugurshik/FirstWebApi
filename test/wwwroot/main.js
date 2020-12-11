@@ -1,5 +1,9 @@
 ﻿"use strict"
 
+const contentBox = document.getElementById("content")
+let curentCatalogId
+let selectedCatalog
+
 // Получить данные о каталоге
 async function LoadCatalog() {
     // отправляет запрос и получаем ответ
@@ -12,27 +16,35 @@ async function LoadCatalog() {
         // получаем данные
 
         const catalogList = await response.json();
+
         createCatalog(catalogList);
    }
 }
 
-let curentCatalog
 // Получить данные о деталях
 async function LoadDetails(id) {
 
-    if (curentCatalog == id)
-        return
-    curentCatalog = id
+    // Если контент отображается - спрятать
+    if (contentBox.hasAttribute("class", "show")) {
+        contentBox.classList.toggle("show")
+        contentBox.style.opacity = 0
+    }
 
     // отправляет запрос и получаем ответ
     const response = await fetch("/api/catalog/ " + id, {
         method: "GET",
         headers: { "Accept": "application/json" }
     });
+
     // если запрос прошел нормально
     if (response.ok === true) {
+        // анимация появления
+        contentBox.classList.toggle("show")
+
         // получаем данные
         const answer = await response.json();
+
+        // 
         createTitle(answer)
         createDetailsRow(answer.details)
     }
@@ -46,7 +58,6 @@ function createTitle(part) {
 function createCatalog(catalog) {
 
     const root = document.getElementById('catalog-root')
-    root.id = -1
     let parent
     let thisDiv = root;
     let previosElem;
@@ -68,15 +79,27 @@ function createCatalog(catalog) {
 
 
             thisDiv = CreateElement(item)
-            thisDiv.setAttribute("Part-id", item.id);
             parent.append(thisDiv)
 
             if (item.hierarchy == 2) {
-                thisDiv.setAttribute("Part-id", item.id);
+                thisDiv.setAttribute("id", item.id);
                 thisDiv.className += " part";
 
-                thisDiv.querySelector("a").addEventListener('click', e => {
+                thisDiv.querySelector("a").addEventListener('click', function (e) {
+
                     e.preventDefault();
+
+                    // Уже есть выбранный каталог?
+                    if (typeof selectedCatalog != 'undefined') {
+                        // Выбран активный каталог?
+                        if (selectedCatalog == this.parentElement)
+                            return
+                        selectedCatalog.classList.toggle("selected")
+                    }
+
+                    selectedCatalog = selectedCatalog = this.parentElement
+                    selectedCatalog.classList.add("selected")
+
                     LoadDetails(item.id)
                 })
             }
@@ -127,12 +150,9 @@ function createDetailsRow(details) {
 }
 
 function createSubTable(products, parentRow) {
-    console.log(products)
     products.forEach(product => {
 
         let goodsDiv = parentRow.parentElement.querySelector('.goods')
-
-        console.log(parentRow.innerHTML)
 
         // Нет контейнера с товароми?
         if (goodsDiv == null) {
