@@ -40,23 +40,20 @@ namespace test.Controllers
         [HttpGet("{CatalogId}")]
         public async Task<ActionResult> Get(int CatalogId)
         {
-            Part part = await db.Parts.Include(x => x.Details).ThenInclude(d => d.Products).FirstOrDefaultAsync(y => y.CatalogId == CatalogId);
-            if (part == null)
+            // Информации о части нет?
+            if (!db.Parts.Where(x => x.CatalogId == CatalogId).Any())
             {
-                var href = db.Catalog.Find(CatalogId).Href;
+                string href = db.Catalog.Find(CatalogId).Href;
 
-                // Ссылка отсутствует?
+                // Ссылка на эту часть отсутствует?
                 if (href == null)
                     return NotFound();
 
-                System.Diagnostics.Debug.WriteLine("\n Parsing parts start... ");
                 // Парсинг прервался?
                 if (!parsingParts(href, CatalogId))
                     return NotFound();
-
-                System.Diagnostics.Debug.WriteLine("\n Parsing parts succes... ");
             }
-
+            Part part = await db.Parts.Include(x => x.Details).ThenInclude(d => d.Products).FirstOrDefaultAsync(y => y.CatalogId == CatalogId);
             return new ObjectResult(part);
 
             //Byte[] b = part.Image;       
