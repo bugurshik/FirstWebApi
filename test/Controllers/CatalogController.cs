@@ -21,37 +21,40 @@ namespace test.Controllers
         public CatalogController(CatalogContext context)
         {
             db = context;
-
-            if (!db.Catalog.Any())
-            {
-                var catalog = parsingCatalog("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/");               
-                foreach (var Item in catalog)
-                {
-                    db.Catalog.Add(Item);
-                    db.SaveChanges();
-                }
-            }
         }
 
         //GET api/catalog
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CatalogItem>>> Get()
         {
+            // Каталог пуст?
+            if (!db.Catalog.Any())
+                // Парсинг прервался?
+                if (!parsingCatalog("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/"))
+                    return NotFound();
+
             return await db.Catalog.ToListAsync();
         }
 
         //GET api/catalog/PartId
         [HttpGet("{CatalogId}")]
-        public  ActionResult Get(int CatalogId)
+        public async Task<ActionResult> Get(int CatalogId)
         {
-            var part = db.Parts.Include(x => x.Details).ThenInclude(d => d.Products).FirstOrDefault(y => y.CatalogId == CatalogId);
+            Part part = await db.Parts.Include(x => x.Details).ThenInclude(d => d.Products).FirstOrDefaultAsync(y => y.CatalogId == CatalogId);
             if (part == null)
             {
                 var href = db.Catalog.Find(CatalogId).Href;
+
+                // Ссылка отсутствует?
                 if (href == null)
                     return NotFound();
-                parsingParts(href, CatalogId);
-                db.SaveChanges();
+
+                System.Diagnostics.Debug.WriteLine("\n Parsing parts start... ");
+                // Парсинг прервался?
+                if (!parsingParts(href, CatalogId))
+                    return NotFound();
+
+                System.Diagnostics.Debug.WriteLine("\n Parsing parts succes... ");
             }
 
             return new ObjectResult(part);
@@ -60,12 +63,11 @@ namespace test.Controllers
             //return File(b, "image/jpeg");
         }
 
-        IEnumerable<CatalogItem> parsingCatalog(string href)
+        bool parsingCatalog(string href)
         {
             //=======================
             // Set variables
             //=======================
-            List<CatalogItem> Elem = new List<CatalogItem> { };
             var web = new HtmlWeb();
             var htmlDoc = web.Load(href);
             var partsTree = htmlDoc.GetElementbyId("autoparts_tree");
@@ -79,29 +81,32 @@ namespace test.Controllers
 
             void Recurs(HtmlNode CatalogElem, int hierarchy, int parentId)
             {
-                var childs = CatalogElem.SelectNodes("ul/li");
                 
+                var childs = CatalogElem.SelectNodes("ul/li");
                 foreach (var node in childs)
                 {
                     id++;
                     string name = node.Element("a").GetDirectInnerText().Trim(); //название элемента каталога
-                    System.Diagnostics.Debug.WriteLine(name + "----------------");
+
                     if (node.SelectNodes("ul/li") == null)
                     {
                         var detailsHref = "https://www.avtoall.ru" + node.Element("a").Attributes["href"].Value;
-                        Elem.Add(new CatalogItem { ParentId = parentId, Hierarchy = hierarchy, Name = name, Href = detailsHref });
+                        db.Catalog.Add(new CatalogItem { ParentId = parentId, Hierarchy = hierarchy, Name = name, Href = detailsHref });
+                        db.SaveChanges();
                     }
                     else
                     {
-                        Elem.Add(new CatalogItem { ParentId = parentId, Hierarchy = hierarchy, Name = name});
+                        db.Catalog.Add(new CatalogItem { ParentId = parentId, Hierarchy = hierarchy, Name = name });
+                        db.SaveChanges();
                         Recurs(node, hierarchy + 1, id);
                     }
                 }
             }
-            return Elem;
+            db.SaveChanges();
+            return true;
         }
 
-        void parsingParts(string href, int catalogId) // Возвращает элементы части
+        bool parsingParts(string href, int catalogId) // Возвращает элементы части
         {
             // Получить документ
             HtmlWeb Web = new HtmlWeb();
@@ -118,17 +123,14 @@ namespace test.Controllers
 
             string name = HtmlDoc.QuerySelector("h1").GetDirectInnerText().Trim();
 
-            // debug
-            System.Diagnostics.Debug.WriteLine("======================================");
-
-            //TODO: добавить алгоритм записи картинки
             // Запись в DB
             Part NewPart = new Part { Name = name, CatalogId = catalogId, Image = data };
             db.Parts.Add(NewPart);
 
             // Парсинг деталей 
             parsingDetails(HtmlDoc, NewPart);
-            
+            db.SaveChanges();
+            return true;
         }
 
         void parsingDetails(HtmlNode HtmlDoc, Part part)
@@ -154,7 +156,6 @@ namespace test.Controllers
 
                 // debug
                 System.Diagnostics.Debug.WriteLine("Parsing detail... model: " + NewDetail.Model);
-                //System.Diagnostics.Debug.WriteLine("{0} | {1} | {2} | частей : {3}", position.PadRight(4).PadLeft(30), model.PadRight(20), name.PadRight(70), count);
 
                 // Запись в DB
                 NewDetail = new Detail { Model = model, Count = Convert.ToInt32(count), Part = part, Name = name };
