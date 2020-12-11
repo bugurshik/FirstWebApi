@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using HtmlAgilityPack;
 using Fizzler.Systems.HtmlAgilityPack;
-using System.Drawing;
-using System.IO;
 using System.Net;
 
 namespace test.Controllers
@@ -27,7 +25,7 @@ namespace test.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CatalogItem>>> Get()
         {
-            // Каталог пуст?
+            // Каталога нет в бд?
             if (!db.Catalog.Any())
                 // Парсинг прервался?
                 if (!parsingCatalog("https://www.avtoall.ru/catalog/paz-20/avtobusy-36/paz_672m-393/"))
@@ -40,8 +38,8 @@ namespace test.Controllers
         [HttpGet("{CatalogId}")]
         public async Task<ActionResult> Get(int CatalogId)
         {
-            // Информации о части нет?
-            if (!db.Parts.Where(x => x.CatalogId == CatalogId).Any())
+            // Части нет в бд?
+            if (!db.Parts.Any(x => x.CatalogId == CatalogId))
             {
                 string href = db.Catalog.Find(CatalogId).Href;
 
