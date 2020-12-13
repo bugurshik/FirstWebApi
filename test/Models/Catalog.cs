@@ -40,11 +40,5 @@ namespace test.Models
         public byte[] Image { get; set; }
         public virtual List<Detail> Details { get; set; } = new List<Detail>(); // Многие ко многим Detail
     }
-    public class Answer
-    {
-        public Part Part { get; set; }
-        public IEnumerable<Detail> Details { get; set; }
-        public ObjectResult Products { get; set; }
-    }
 }
 

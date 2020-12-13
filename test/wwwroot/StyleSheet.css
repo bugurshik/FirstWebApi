@@ -17,6 +17,14 @@ h1{
 
 
 /* GENERAL */
+.part-img {
+    height: 400px;
+    width: auto;
+}
+.product-img {
+    height: auto;
+    width: 150px;
+}
 .show {
     animation: show-hide 0.3s ease;
     animation-fill-mode: none;
@@ -45,7 +53,8 @@ h1{
 
 /* MENU */
 #catalog-root{
-    padding-top: 60px;
+    padding-top: 70px;
+    width: 220px;
 }
 .element {
     padding: 5px !important;
@@ -112,5 +121,4 @@ table tr td:nth-child(3) {
     flex-direction: row;
     justify-content: space-between;
 }
-
 

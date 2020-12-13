@@ -53,9 +53,6 @@ namespace test.Controllers
             }
             Part part = await db.Parts.Include(x => x.Details).ThenInclude(d => d.Products).FirstOrDefaultAsync(y => y.CatalogId == CatalogId);
             return new ObjectResult(part);
-
-            //Byte[] b = part.Image;       
-            //return File(b, "image/jpeg");
         }
 
         bool parsingCatalog(string href)
@@ -107,17 +104,11 @@ namespace test.Controllers
             HtmlWeb Web = new HtmlWeb();
             var HtmlDoc = Web.Load(href).DocumentNode;
 
-            // Поиск по документу
-            var imageUrl = HtmlDoc.QuerySelector("#picture_img").GetAttributeValue("src","");
-
-            byte[] data;
-            using (WebClient webClient = new WebClient())
-            {
-                data = webClient.DownloadData("https://yandex.ru/images/search?pos=1&from=tabbar&img_url=https%3A%2F%2Fsun9-19.userapi.com%2Fc851120%2Fv851120612%2Fd4da%2FylKmY4VPl2A.jpg&text=картинки+здесь+rfhnbyrf+yt+yfqltyf&rpt=simage");
-            }
+            var imageUrl = HtmlDoc.QuerySelector("#picture_img").GetAttributeValue("src", "");
+            byte[] data = GetImageDataFromURL(imageUrl);
 
             string name = HtmlDoc.QuerySelector("h1").GetDirectInnerText().Trim();
-
+            
             // Запись в DB
             Part NewPart = new Part { Name = name, CatalogId = catalogId, Image = data };
             db.Parts.Add(NewPart);
@@ -170,19 +161,35 @@ namespace test.Controllers
                 name = goods.QuerySelector("strong").InnerText;
                 price = Convert.ToInt32(goods.QuerySelector(".price-internet").InnerText.Split()[0]);
 
-                //TODO: добавить алгоритм записи картинки
-                // image = 
+                var imageUrl = goods.QuerySelector("img").GetAttributeValue("data-src", "");
+                if (!imageUrl.Contains("http"))
+                    imageUrl = "https://www.avtoall.ru" + imageUrl;
+
+                byte[] ImageData = GetImageDataFromURL(imageUrl);
 
                 // Запись в DB
-                NewProduct = new Product { Price = price, Name = name, DetailModel = detail.Model};
-                // добавить в таблицу
+                NewProduct = new Product { Price = price, Name = name, DetailModel = detail.Model, Image = ImageData };
+                db.Products.Add(NewProduct);
 
                 //debug
                 System.Diagnostics.Debug.WriteLine("Parsing product... id: " + detail.Id );
-                NewProduct.Details.Add(detail); 
+
                 // добавить связь "многие-многие"
-                db.Products.Add(NewProduct);
+                NewProduct.Details.Add(detail); 
+                
                 db.SaveChanges();
+            }
+        }
+        byte[] GetImageDataFromURL(string URL)
+        {
+            using (WebClient webClient = new WebClient())
+            {
+                webClient.Headers["User-Agent"] =
+                "Mozilla/4.0 (Compatible; Windows NT 5.1; MSIE 6.0) " +
+                "(compatible; MSIE 6.0; Windows NT 5.1; " +
+                ".NET CLR 1.1.4322; .NET CLR 2.0.50727)";
+                
+                return webClient.DownloadData(URL);
             }
         }
     }
